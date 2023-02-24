@@ -1,16 +1,89 @@
 // import logo from './logo.svg';
 // import './App.css';
 import React from 'react';
+import $ from 'jquery';
 
 class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = { lista:[
-      {id:'15', name:'José', email:'jose@sg.com'},
-      {id:'27', name:'Maria', email:'mariamariana@mail.com'},
-      {id:'9', name:'Juca', email:'jose@admin.com'}
-    ] }
+      
+    ],
+    name:'', email:'', password: '', password_confirmation: '', guardaDados: {}
+   }
+   this.enviaForm = this.enviaForm.bind(this);
+   this.setName = this.setName.bind(this);
+   this.setEmail = this.setEmail.bind(this);
+   this.setPassword = this.setPassword.bind(this);
+   this.setPasswordConfirmation = this.setPasswordConfirmation.bind(this);
+
+   this.guardaDados = {};
   }
+
+  enviaForm(evento) {
+    evento.preventDefault();
+    console.log("dados sendo enviados");
+
+    $.ajax({
+      url:"https://profitmanager.onrender.com/api/v2/auth",
+      contentType: 'application/json', // necessário para identificar o tipo de dado enviado como JSON
+      dataType: 'json',
+      accept: 'application/json',
+      type: 'post',
+      data: JSON.stringify(
+        {
+          name: this.state.name,
+          email: this.state.email,
+          password: this.state.password,
+          password_confirmation: this.state.password_confirmation
+        }
+      ),
+      success: function(resposta){
+        console.log("Success!");
+        console.log(resposta);
+
+        $.each(resposta.data, function(index, value) {
+          this.guardaDados[index] = value;
+        }.bind(this));
+
+        setTimeout(function(){
+          var  novaLista = this.state.lista;
+          novaLista.push(this.guardaDados);
+          this.setState({lista: novaLista});
+
+          this.guardaDados = {};
+        }.bind(this), 10);
+
+      }.bind(this),
+
+      error: function(resposta){
+        console.log("Error!");
+      },
+
+      complete: function(resposta){
+        console.log('Complete!!');
+        console.log(resposta.getAllResponseHeaders());
+        this.guardaDados.token = resposta.getResponseHeader('access-token');
+        this.guardaDados.client = resposta.getResponseHeader('client');
+        this.guardaDados.uid = resposta.getResponseHeader('uid');
+      }.bind(this),
+    });
+  }
+
+  setName(evento) {
+    this.setState({name:evento.target.value});
+  }
+  setEmail(evento) {
+    this.setState({email:evento.target.value});
+  }
+  setPassword(evento) {
+    this.setState({password:evento.target.value});
+  }
+  setPasswordConfirmation(evento) {
+    this.setState({password_confirmation:evento.target.value});
+  }
+  
+
   render () {
     return (
       <div>	
@@ -70,22 +143,23 @@ class App extends React.Component {
               
               <div>						
                 <h1 className="h2">Cadastro de Usuários</h1>						
-                <form>
+                <form onSubmit={this.enviaForm} method="POST">
                   <div className="form-group">
                     <label for="formGroupExampleInput">Nome</label>
-                    <input type="text" className="form-control" id="name" name="name" value=""  placeholder="Nome"/>
+                    <input type="text" className="form-control" id="name" name="name" value={this.state.name} onChange={this.setName} placeholder="Nome"/>
                   </div>
                   <div className="form-group">
                     <label for="formGroupExampleInput">E-mail</label>
-                    <input type="email" className="form-control" id="email" name="email" value=""  placeholder="E-mail"/>
+                    <input type="email" className="form-control" id="email" name="email" value={this.state.email} onChange={this.setEmail} placeholder="E-mail"/>
                   </div>
                   <div className="form-group">
                     <label for="formGroupExampleInput2">Senha</label>
-                    <input type="password" className="form-control" id="password" name="password" value="" placeholder="Senha"/>
+                    <input type="password" className="form-control" id="password" name="password" value={this.state.password} onChange={this.setPassword} placeholder="Senha"/>
                   </div>
                   <div className="form-group">
                     <label for="formGroupExampleInput2">Confirmar Senha</label>
-                    <input type="password" className="form-control" id="password_confirmation" name="password_confirmation" value="" placeholder="Confirme"/>
+                    <input type="password" className="form-control" id="password_confirmation" name="password_confirmation" 
+                    value={this.state.password_confirmation} onChange={this.setPasswordConfirmation} placeholder="Confirme"/>
                   </div>
                   <button type="submit" className="btn btn-primary">Inscrever-se</button>
                 </form>						
@@ -107,7 +181,7 @@ class App extends React.Component {
                     {
                       this.state.lista.map(function(user) {
                         return (
-                          <tr>
+                          <tr id={user.id}>
                             <td>{user.id}</td>
                             <td>{user.name}</td>
                             <td>{user.email}</td>
